@@ -4,13 +4,14 @@ class HabitsViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-       
-        setupView()
+        view.backgroundColor = .tabBarToolbar
+        
         setupNavigationBar()
     }
     
-    private func setupView() {
-        view.backgroundColor = .tabBarToolbar
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        
     }
     
     private func setupNavigationBar() {
@@ -18,16 +19,20 @@ class HabitsViewController: UIViewController {
             image: UIImage(named: "symbol_plus"),
             style: .plain,
             target: self,
-            action: #selector(didTappedOnRightBarButton)
+            action: #selector(didTapRightBarButton)
         )
         symbol.tintColor = .myHabitsPurple
         navigationItem.rightBarButtonItem = symbol
         navigationController?.navigationBar.prefersLargeTitles = true
         navigationItem.title = "Сегодня"
     }
-    
-    @objc func didTappedOnRightBarButton() {
-        
+ 
+    @objc private func didTapRightBarButton() {
+        let habitCreateController = HabitCreateEditViewController()
+        habitCreateController.navigationItem.title = "Создать"
+        habitCreateController.navigationItem.largeTitleDisplayMode = .never
+        let navigationController = UINavigationController(rootViewController: habitCreateController)
+        navigationController.modalPresentationStyle = .fullScreen
+        present(navigationController, animated: true)
     }
 }
- 
