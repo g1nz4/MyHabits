@@ -137,7 +137,6 @@ class HabitCreateEditViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-       
         view.backgroundColor = .tabBarToolbar
         
         setupNavigationBar()
@@ -150,10 +149,6 @@ class HabitCreateEditViewController: UIViewController {
   
     }
    
-    func showDeleteButton() {
-         self.deleteButton.isHidden = false
-    }
-    
     private func setupNavigationBar() {
         navigationItem.leftBarButtonItem = UIBarButtonItem(
             title: "Отменить",
@@ -290,7 +285,7 @@ class HabitCreateEditViewController: UIViewController {
     @objc private func didTapSaveButton(_ text: UITextField) {
         if textField.text != "" {
             let habit = Habit(
-                name: "\(String(describing: textField.text))",
+                name: textField.text!,
                 date: datePicker.date,
                 color: colorButton.backgroundColor!
             )
@@ -304,6 +299,10 @@ class HabitCreateEditViewController: UIViewController {
     
     @objc private func didTapDeleteButton() {
         
+    }
+    
+    func showDeleteButton() {
+         self.deleteButton.isHidden = false
     }
 }
 
