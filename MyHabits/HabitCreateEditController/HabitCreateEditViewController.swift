@@ -1,6 +1,6 @@
 import UIKit
 
-class HabitCreateEditViewController: UIViewController {
+class HabitCreateEditViewController: UIViewController{
     
     private lazy var scrollView: UIScrollView = {
         let scrollView = UIScrollView()
@@ -135,20 +135,17 @@ class HabitCreateEditViewController: UIViewController {
         return button
     }()
     
+    private var habit: Habit?
+    private var index: Int?
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .tabBarToolbar
-        
         setupNavigationBar()
         addSubviews()
         setupConstraint()
     }
     
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-  
-    }
-   
     private func setupNavigationBar() {
         navigationItem.leftBarButtonItem = UIBarButtonItem(
             title: "Отменить",
@@ -162,6 +159,7 @@ class HabitCreateEditViewController: UIViewController {
             target: self,
             action: #selector(didTapSaveButton)
         )
+        navigationItem.rightBarButtonItem?.setTitleTextAttributes([.font: UIFont.systemFont(ofSize: 17.0, weight: .semibold)], for: .normal)
         navigationItem.leftBarButtonItem?.tintColor = .myHabitsPurple
         navigationItem.rightBarButtonItem?.tintColor = .myHabitsPurple
     }
@@ -225,7 +223,7 @@ class HabitCreateEditViewController: UIViewController {
             datePicker.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
             datePicker.heightAnchor.constraint(equalToConstant: 216.0),
             
-            deleteButton.topAnchor.constraint(equalTo: datePicker.bottomAnchor, constant: 216.0),
+            deleteButton.topAnchor.constraint(equalTo: datePicker.bottomAnchor, constant: 195.0),
             deleteButton.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16.0),
             deleteButton.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16.0),
             deleteButton.heightAnchor.constraint(equalToConstant: 50.0),
@@ -233,6 +231,13 @@ class HabitCreateEditViewController: UIViewController {
         ])
     }
    
+    private func loadHabitEditViewController(habit: Habit, index: Int) {
+        textField.text = habit.name
+        colorButton.backgroundColor = habit.color
+        datePicker.date = habit.date
+        deleteButton.isHidden = false
+    }
+    
     private func warningIsEmptyTextField() {
         let alertController = UIAlertController(
             title: "Введите название привычки",
@@ -283,31 +288,65 @@ class HabitCreateEditViewController: UIViewController {
     }
     
     @objc private func didTapSaveButton(_ text: UITextField) {
-        if textField.text != "" {
-            let habit = Habit(
-                name: textField.text!,
-                date: datePicker.date,
-                color: colorButton.backgroundColor!
-            )
-            let store = HabitsStore.shared
-            store.habits.append(habit)
-            dismiss(animated: true)
-        } else {
-           warningIsEmptyTextField()
-        }
+        let store = HabitsStore.shared
+        
+           if habit == nil {
+              
+                if textField.text != "" {
+                    let newHabit = Habit(
+                        name: textField.text!,
+                        date: datePicker.date,
+                        color: colorButton.backgroundColor!
+                    )
+                    store.habits.append(newHabit)
+                   dismiss(animated: true)
+                } else {
+                    warningIsEmptyTextField()
+                }
+               
+           } else if habit != nil {
+               
+               if textField.text != "" {
+                   store.habits[index!].name = textField.text!
+                   store.habits[index!].color = colorButton.backgroundColor!
+                   store.habits[index!].date = datePicker.date
+                   store.save()
+                   dismiss(animated: true)
+               } else {
+                   warningIsEmptyTextField()
+               }
+           }
     }
     
     @objc private func didTapDeleteButton() {
-        
-    }
-    
-    func showDeleteButton() {
-         self.deleteButton.isHidden = false
+        let alertController = UIAlertController(
+            title: "Удалить привычку",
+            message: "Вы хотите удалить привычку \n \"\(habit!.name)\"?",
+            preferredStyle: .alert
+        )
+        let cancel = UIAlertAction(
+            title: "Отмена",
+            style: .cancel
+        ){
+            (alert) in alertController.dismiss(animated: true)
+        }
+        let delete = UIAlertAction(
+            title: "Удалить",
+            style: .destructive
+        ){
+            (alert) in
+            let store = HabitsStore.shared
+            store.habits.remove(at: self.index!)
+            self.dismiss(animated: true)
+        }
+        alertController.addAction(cancel)
+        alertController.addAction(delete)
+        present(alertController, animated: true)
     }
 }
 
 extension HabitCreateEditViewController: UIColorPickerViewControllerDelegate {
-
+    
     func colorPickerViewController(
         _ viewController: UIColorPickerViewController,
         didSelect color: UIColor,
@@ -315,5 +354,17 @@ extension HabitCreateEditViewController: UIColorPickerViewControllerDelegate {
     ) {
         let color = viewController.selectedColor
         colorButton.backgroundColor = color
+    }
+}
+
+extension HabitCreateEditViewController: HabitsViewControllerDelegate {
+    
+    func didSelect(
+        selectedHabit: Habit,
+        selectedIndex: Int
+    ) {
+        habit = selectedHabit
+        index = selectedIndex
+        loadHabitEditViewController(habit: habit!, index: index!)
     }
 }

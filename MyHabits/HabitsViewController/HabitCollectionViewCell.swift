@@ -68,7 +68,7 @@ class HabitCollectionViewCell: UICollectionViewCell {
         let image = UIImageView()
         image.translatesAutoresizingMaskIntoConstraints = false
         image.clipsToBounds = true
-        image.image = UIImage(named: "myHabitsCheckmark")
+        image.image = UIImage(named: "check")
         image.tintColor = .white
         image.contentMode = .scaleAspectFit
     
@@ -77,9 +77,7 @@ class HabitCollectionViewCell: UICollectionViewCell {
     
     override init(frame: CGRect) {
         super.init(frame: frame)
-        
         setupContent()
-      
     }
        
     required init?(coder: NSCoder) {
@@ -119,7 +117,7 @@ class HabitCollectionViewCell: UICollectionViewCell {
             counter.heightAnchor.constraint(equalToConstant: 18.0)
         ])
     }
-    
+ 
     @objc private func didTapCheckButton() {
         let myhabit = HabitsStore.shared.habits.first(where: {$0.name == habitName.text!})
         let habitstore = HabitsStore.shared
@@ -143,6 +141,7 @@ class HabitCollectionViewCell: UICollectionViewCell {
         if habit.isAlreadyTakenToday == true {
             checkButton.backgroundColor = habit.color
             symbol.alpha = 1.0
+            
         } else if habit.isAlreadyTakenToday == false {
             checkButton.backgroundColor = .white
             symbol.alpha = 0.0

@@ -1,15 +1,21 @@
 import UIKit
 
+protocol HabitsViewControllerDelegate: AnyObject {
+    func didSelect(selectedHabit: Habit, selectedIndex: Int)
+}
+
 class HabitsViewController: UIViewController {
     
-    fileprivate lazy var habits: [Habit] = HabitsStore.shared.habits
+    weak var delegate: HabitsViewControllerDelegate?
+    
+    private lazy var habits: [Habit] = HabitsStore.shared.habits
     
     fileprivate enum Constants {
         static let leftSpacing: CGFloat = 16.0
         static let rightSpacing: CGFloat = 17.0
     }
     
-    private lazy var collectionView: UICollectionView = {
+    private lazy var habitsCollectionView: UICollectionView = {
         let layout = UICollectionViewFlowLayout()
         layout.scrollDirection = .vertical
         layout.minimumLineSpacing = 12.0
@@ -31,26 +37,27 @@ class HabitsViewController: UIViewController {
             HabitCollectionViewCell.self,
             forCellWithReuseIdentifier: HabitCollectionViewCell.reuseIdentifier
         )
-
+      
         return collectionView
     }()
     
+    private var selectedHabit: Habit?
+    private var selectedIndex: Int?
+    
     override func viewDidLoad() {
         super.viewDidLoad()
-        
         setupNavigationBar()
         setupCollectionView()
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-       
+        habitsCollectionView.reconfigureItems(at: habitsCollectionView.indexPathsForVisibleItems)
     }
     
     override func viewWillLayoutSubviews() {
         super.viewWillLayoutSubviews()
-       
-        collectionView.collectionViewLayout.invalidateLayout()
+        habitsCollectionView.collectionViewLayout.invalidateLayout()
     }
     
     private func setupNavigationBar() {
@@ -63,37 +70,37 @@ class HabitsViewController: UIViewController {
         symbol.tintColor = .myHabitsPurple
         navigationItem.rightBarButtonItem = symbol
         navigationController?.navigationBar.prefersLargeTitles = true
-        navigationItem.largeTitleDisplayMode = .always
+        navigationItem.largeTitleDisplayMode = .automatic
         navigationItem.title = "Сегодня"
     }
     
     private func setupCollectionView() {
-        view.addSubview(collectionView)
+        view.addSubview(habitsCollectionView)
     
         let safeAreaGuide = view.safeAreaLayoutGuide
         NSLayoutConstraint.activate([
-            collectionView.topAnchor.constraint(equalTo: safeAreaGuide.topAnchor),
-            collectionView.leadingAnchor.constraint(equalTo: safeAreaGuide.leadingAnchor),
-            collectionView.trailingAnchor.constraint(equalTo: safeAreaGuide.trailingAnchor),
-            collectionView.widthAnchor.constraint(equalTo: safeAreaGuide.widthAnchor),
-            collectionView.centerXAnchor.constraint(equalTo: safeAreaGuide.centerXAnchor),
-            collectionView.centerYAnchor.constraint(equalTo: safeAreaGuide.centerYAnchor),
-            collectionView.bottomAnchor.constraint(equalTo: safeAreaGuide.bottomAnchor)
+            habitsCollectionView.topAnchor.constraint(equalTo: safeAreaGuide.topAnchor),
+            habitsCollectionView.leadingAnchor.constraint(equalTo: safeAreaGuide.leadingAnchor),
+            habitsCollectionView.trailingAnchor.constraint(equalTo: safeAreaGuide.trailingAnchor),
+            habitsCollectionView.widthAnchor.constraint(equalTo: safeAreaGuide.widthAnchor),
+            habitsCollectionView.centerXAnchor.constraint(equalTo: safeAreaGuide.centerXAnchor),
+            habitsCollectionView.centerYAnchor.constraint(equalTo: safeAreaGuide.centerYAnchor),
+            habitsCollectionView.bottomAnchor.constraint(equalTo: safeAreaGuide.bottomAnchor)
         ])
     }
  
     @objc private func didTapRightBarButton() {
-        let habitCreateController = HabitCreateEditViewController()
-        habitCreateController.navigationItem.title = "Создать"
-        habitCreateController.navigationItem.largeTitleDisplayMode = .never
-        let navigationController = UINavigationController(rootViewController: habitCreateController)
+        let habitCreateViewController = HabitCreateEditViewController()
+        let navigationController = UINavigationController(rootViewController: habitCreateViewController)
         navigationController.modalPresentationStyle = .fullScreen
+        navigationController.navigationBar.prefersLargeTitles = false
+        habitCreateViewController.navigationItem.title = "Создать"
         present(navigationController, animated: true)
     }
 }
 
-extension HabitsViewController: UICollectionViewDataSource, UICollectionViewDelegate {
-    
+extension HabitsViewController: UICollectionViewDataSource {
+   
     func numberOfSections(
         in collectionView: UICollectionView
     ) -> Int {
@@ -122,8 +129,8 @@ extension HabitsViewController: UICollectionViewDataSource, UICollectionViewDele
             let cell = collectionView.dequeueReusableCell(
                 withReuseIdentifier: ProgressCollectionViewCell.reuseIdentifier,
                 for: indexPath) as! ProgressCollectionViewCell
-
-           return cell
+          
+            return cell
         }
         if indexPath.section == 1 {
             let cell = collectionView.dequeueReusableCell(
@@ -157,14 +164,14 @@ extension HabitsViewController: UICollectionViewDelegateFlowLayout {
         }
         return .zero
     }
-       
+    
     func collectionView(
         _ collectionView: UICollectionView,
         layout collectionViewLayout: UICollectionViewLayout,
         insetForSectionAt section: Int
     ) -> UIEdgeInsets {
         if section == 0 {
-        let edgeInsetsProgress = UIEdgeInsets(
+            let edgeInsetsProgress = UIEdgeInsets(
                 top: 22.0,
                 left: 16.0,
                 bottom: 0.0,
@@ -173,7 +180,7 @@ extension HabitsViewController: UICollectionViewDelegateFlowLayout {
             return edgeInsetsProgress
         }
         if section == 1 {
-        let edgeInsetsHabits = UIEdgeInsets(
+            let edgeInsetsHabits = UIEdgeInsets(
                 top: 18.0,
                 left: 16.0,
                 bottom: 16.0,
@@ -184,5 +191,24 @@ extension HabitsViewController: UICollectionViewDelegateFlowLayout {
         return .zero
     }
 }
+
+extension HabitsViewController: UICollectionViewDelegate {
+   
+    func collectionView(
+        _ collectionView: UICollectionView,
+        didSelectItemAt indexPath: IndexPath
+    ) {
+        if indexPath.section == 1 {
+            selectedHabit = habits[indexPath.item]
+            selectedIndex = indexPath.item
+            let detailController = HabitDetailsViewController()
+            detailController.didSelect(selectedHabit: selectedHabit!, selectedIndex: selectedIndex!)
+            detailController.navigationItem.title = selectedHabit!.name
+            detailController.navigationItem.largeTitleDisplayMode = .never
+            navigationController?.pushViewController(detailController, animated: true)
+        }
+    }
+}
+
     
 
