@@ -8,7 +8,9 @@ class HabitsViewController: UIViewController {
     
     weak var delegate: HabitsViewControllerDelegate?
     
-    private lazy var habits: [Habit] = HabitsStore.shared.habits
+    private var habits: [Habit] {
+        HabitsStore.shared.habits
+    }
     
     fileprivate enum Constants {
         static let leftSpacing: CGFloat = 16.0
@@ -43,16 +45,11 @@ class HabitsViewController: UIViewController {
     
     private var selectedHabit: Habit?
     private var selectedIndex: Int?
-    
+  
     override func viewDidLoad() {
         super.viewDidLoad()
         setupNavigationBar()
         setupCollectionView()
-    }
-    
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        habitsCollectionView.reconfigureItems(at: habitsCollectionView.indexPathsForVisibleItems)
     }
     
     override func viewWillLayoutSubviews() {
@@ -88,9 +85,32 @@ class HabitsViewController: UIViewController {
             habitsCollectionView.bottomAnchor.constraint(equalTo: safeAreaGuide.bottomAnchor)
         ])
     }
+    private func updateProgressCell() {
+        let progressIndex = IndexPath(item: 0, section: 0)
+        if habitsCollectionView.indexPathsForVisibleItems.contains(progressIndex) {
+            habitsCollectionView.reloadItems(at: [progressIndex])
+        }
+    }
+    
+    private func deleteHabit(at index: Int) {
+        guard index >= 0, index < HabitsStore.shared.habits.count else { return }
+
+        HabitsStore.shared.habits.remove(at: index)
+
+        let deleteIndex = IndexPath(item: index, section: 1)
+        habitsCollectionView.performBatchUpdates({
+            habitsCollectionView.deleteItems(at: [deleteIndex])
+        }, completion: { _ in
+            let progressIndex = IndexPath(item: 0, section: 0)
+            if self.habitsCollectionView.indexPathsForVisibleItems.contains(progressIndex) {
+                self.habitsCollectionView.reloadItems(at: [progressIndex])
+            }
+        })
+    }
  
     @objc private func didTapRightBarButton() {
         let habitCreateViewController = HabitCreateEditViewController()
+        habitCreateViewController.delegate = self
         let navigationController = UINavigationController(rootViewController: habitCreateViewController)
         navigationController.modalPresentationStyle = .fullScreen
         navigationController.navigationBar.prefersLargeTitles = false
@@ -128,20 +148,27 @@ extension HabitsViewController: UICollectionViewDataSource {
         if indexPath.section == 0 {
             let cell = collectionView.dequeueReusableCell(
                 withReuseIdentifier: ProgressCollectionViewCell.reuseIdentifier,
-                for: indexPath) as! ProgressCollectionViewCell
-          
+                for: indexPath
+            ) as! ProgressCollectionViewCell
+            let progress = HabitsStore.shared.todayProgress
+            cell.percentageOfProgress(value: progress)
+            
             return cell
-        }
-        if indexPath.section == 1 {
+            
+        } else {
+            
             let cell = collectionView.dequeueReusableCell(
                 withReuseIdentifier: HabitCollectionViewCell.reuseIdentifier,
-                for: indexPath) as! HabitCollectionViewCell
+                for: indexPath
+            ) as! HabitCollectionViewCell
+            guard indexPath.row < habits.count else {
+                return cell
+            }
             let habit = habits[indexPath.row]
             cell.setupCell(habit: habit)
             
             return cell
         }
-        return UICollectionViewCell()
     }
 }
 
@@ -199,16 +226,35 @@ extension HabitsViewController: UICollectionViewDelegate {
         didSelectItemAt indexPath: IndexPath
     ) {
         if indexPath.section == 1 {
-            selectedHabit = habits[indexPath.item]
-            selectedIndex = indexPath.item
+            self.selectedHabit = habits[indexPath.item]
+            self.selectedIndex = indexPath.item
             let detailController = HabitDetailsViewController()
             detailController.didSelect(selectedHabit: selectedHabit!, selectedIndex: selectedIndex!)
             detailController.navigationItem.title = selectedHabit!.name
+            detailController.editDelegate = self
             detailController.navigationItem.largeTitleDisplayMode = .never
             navigationController?.pushViewController(detailController, animated: true)
         }
     }
 }
-
+extension HabitsViewController: HabitCreateEditDelegate {
     
-
+    func didDelete(deleteIndex: Int) {
+        deleteHabit(at: deleteIndex)
+    }
+    
+    func didCreate(newhabit: Habit) {
+        let newHabitIndex = HabitsStore.shared.habits.count - 1
+        let indexPath = IndexPath(item: newHabitIndex, section: 1)
+        habitsCollectionView.insertItems(at: [indexPath])
+        updateProgressCell()
+    }
+    
+    func didUpdateHabit(index: Int) {
+       let habitUpdateIndex = IndexPath(item: index, section: 1)
+       if habitsCollectionView.indexPathsForVisibleItems.contains(habitUpdateIndex) {
+           habitsCollectionView.reloadItems(at: [habitUpdateIndex])
+       }
+        updateProgressCell()
+   }
+}

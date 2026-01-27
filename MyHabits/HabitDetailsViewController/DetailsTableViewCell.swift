@@ -78,14 +78,30 @@ class DetailsTableViewCell: UITableViewCell {
             separator.heightAnchor.constraint(equalToConstant: 0.5)
         ])
     }
-    
+
     func setupCell(date: Date, habit: Habit) {
-        let formater = DateFormatter()
-        formater.dateFormat = "dd.MM.yyyy"
-        let dateString = formater.string(from: date)
-        dateLabel.text = "\(dateString)"
-       
+        let calendar = Calendar.current
+        let today = Date()
+        let startToday = calendar.startOfDay(for: today)
+        let startDate  = calendar.startOfDay(for: date)
+
+        if let differenceDays = calendar.dateComponents([.day], from: startDate, to: startToday).day {
+            switch differenceDays {
+            case 0:
+                dateLabel.text = "Сегодня"
+            case 1:
+                dateLabel.text = "Вчера"
+            case 2:
+                dateLabel.text = "Позавчера"
+            default:
+                let formatter = DateFormatter()
+                formatter.dateFormat = "dd.MM.yyyy"
+                dateLabel.text = formatter.string(from: date)
+            }
+        }
+
         let isTracked = HabitsStore.shared.habit(habit, isTrackedIn: date)
+       
         if isTracked == true {
             symbol.alpha = 0.74
         } else {

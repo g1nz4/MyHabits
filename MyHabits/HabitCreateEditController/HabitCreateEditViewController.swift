@@ -1,6 +1,14 @@
 import UIKit
 
-class HabitCreateEditViewController: UIViewController{
+protocol HabitCreateEditDelegate: AnyObject {
+    func didCreate(newhabit: Habit) 
+    func didDelete(deleteIndex: Int)
+    func didUpdateHabit(index: Int)
+}
+
+class HabitCreateEditViewController: UIViewController {
+    
+    weak var delegate: HabitCreateEditDelegate?
     
     private lazy var scrollView: UIScrollView = {
         let scrollView = UIScrollView()
@@ -35,6 +43,8 @@ class HabitCreateEditViewController: UIViewController{
         textField.placeholder = "Бегать по утрам, спать 8 часов и т.п..."
         textField.font = UIFont.preferredFont(forTextStyle: .body)
         textField.font = UIFont.systemFont(ofSize: 17.0, weight: .regular)
+        textField.returnKeyType = .done
+        textField.delegate = self
         
         return textField
     }()
@@ -144,6 +154,11 @@ class HabitCreateEditViewController: UIViewController{
         setupNavigationBar()
         addSubviews()
         setupConstraint()
+        registerForKeyboardNotifications()
+    }
+
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
     
     private func setupNavigationBar() {
@@ -231,6 +246,22 @@ class HabitCreateEditViewController: UIViewController{
         ])
     }
    
+    private func registerForKeyboardNotifications() {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(keyboardWillShow(_:)),
+            name: UIResponder.keyboardWillShowNotification,
+            object: nil
+        )
+
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(keyboardWillHide(_:)),
+            name: UIResponder.keyboardWillHideNotification,
+            object: nil
+        )
+    }
+    
     private func loadHabitEditViewController(habit: Habit, index: Int) {
         textField.text = habit.name
         colorButton.backgroundColor = habit.color
@@ -252,6 +283,32 @@ class HabitCreateEditViewController: UIViewController{
         }
         alertController.addAction(alertAction)
         present(alertController, animated: true)
+    }
+    
+    @objc private func keyboardWillShow(_ notification: Notification) {
+        guard
+            let userInfo = notification.userInfo,
+            let keyboardFrame = userInfo[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect
+        else { return }
+
+        let keyboardHeight = keyboardFrame.height
+        let contentInsets = UIEdgeInsets(
+            top: 0,
+            left: 0,
+            bottom: keyboardHeight,
+            right: 0
+        )
+        scrollView.contentInset = contentInsets
+        scrollView.scrollIndicatorInsets = contentInsets
+
+        let textFieldFrameInScroll = scrollView.convert(textField.frame, from: contentView)
+        scrollView.scrollRectToVisible(textFieldFrameInScroll, animated: true)
+    }
+
+    @objc private func keyboardWillHide(_ notification: Notification) {
+        let contentInsets = UIEdgeInsets.zero
+        scrollView.contentInset = contentInsets
+        scrollView.scrollIndicatorInsets = contentInsets
     }
     
     @objc private func didValueChanged(_ sender: UIDatePicker) {
@@ -293,24 +350,27 @@ class HabitCreateEditViewController: UIViewController{
            if habit == nil {
               
                 if textField.text != "" {
-                    let newHabit = Habit(
+                    let habit = Habit(
                         name: textField.text!,
                         date: datePicker.date,
                         color: colorButton.backgroundColor!
                     )
-                    store.habits.append(newHabit)
-                   dismiss(animated: true)
+                    store.habits.append(habit)
+                    delegate?.didCreate(newhabit: habit)
+                    dismiss(animated: true)
                 } else {
                     warningIsEmptyTextField()
                 }
                
            } else if habit != nil {
                
+               guard let updateIndex = index else { return }
                if textField.text != "" {
-                   store.habits[index!].name = textField.text!
-                   store.habits[index!].color = colorButton.backgroundColor!
-                   store.habits[index!].date = datePicker.date
+                   store.habits[updateIndex].name = textField.text!
+                   store.habits[updateIndex].color = colorButton.backgroundColor!
+                   store.habits[updateIndex].date = datePicker.date
                    store.save()
+                   delegate?.didUpdateHabit(index: updateIndex)
                    dismiss(animated: true)
                } else {
                    warningIsEmptyTextField()
@@ -332,16 +392,27 @@ class HabitCreateEditViewController: UIViewController{
         }
         let delete = UIAlertAction(
             title: "Удалить",
-            style: .destructive
-        ){
-            (alert) in
-            let store = HabitsStore.shared
-            store.habits.remove(at: self.index!)
+            style: .destructive) { _ in
+            guard let index = self.index, index >= 0, index < HabitsStore.shared.habits.count else { return }
+            self.delegate?.didDelete(deleteIndex: index)
+            NotificationCenter.default.post(
+                name: .habitDeleted,
+                object: nil,
+                userInfo: ["index": index]
+            )
             self.dismiss(animated: true)
         }
         alertController.addAction(cancel)
         alertController.addAction(delete)
         present(alertController, animated: true)
+    }
+}
+
+extension HabitCreateEditViewController: UITextFieldDelegate {
+   
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        textField.resignFirstResponder()
+        return true
     }
 }
 
@@ -365,6 +436,6 @@ extension HabitCreateEditViewController: HabitsViewControllerDelegate {
     ) {
         habit = selectedHabit
         index = selectedIndex
-        loadHabitEditViewController(habit: habit!, index: index!)
+        loadHabitEditViewController(habit: selectedHabit, index: selectedIndex)
     }
 }

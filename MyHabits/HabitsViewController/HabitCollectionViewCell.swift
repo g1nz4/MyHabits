@@ -1,8 +1,14 @@
 import UIKit
 
+protocol UpdateProgressViewCellDelegate: AnyObject {
+    func updateProgress(newValue: Float)
+}
+
 class HabitCollectionViewCell: UICollectionViewCell {
     
     static let reuseIdentifier = "HabitCollectionViewCell"
+    
+    weak var delegate: UpdateProgressViewCellDelegate?
     
     private lazy var habitName: UILabel = {
         let label = UILabel()
@@ -58,7 +64,11 @@ class HabitCollectionViewCell: UICollectionViewCell {
         button.translatesAutoresizingMaskIntoConstraints = false
         button.layer.cornerRadius = 19.0
         button.layer.borderWidth = 2.0
-        button.addTarget(self, action: #selector(didTapCheckButton), for: .touchUpInside)
+        button.addTarget(
+            self,
+            action: #selector(didTapCheckButton),
+            for: .touchUpInside
+        )
         
         return button
         
@@ -129,6 +139,8 @@ class HabitCollectionViewCell: UICollectionViewCell {
                 self.symbol.alpha = 1.0
             }
         }
+        let newValue = habitstore.todayProgress
+        delegate?.updateProgress(newValue: newValue)
     }
     
     func setupCell(habit: Habit) {
@@ -148,5 +160,3 @@ class HabitCollectionViewCell: UICollectionViewCell {
         }
     }
 }
-
-

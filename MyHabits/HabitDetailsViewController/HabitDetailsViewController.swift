@@ -2,6 +2,8 @@ import UIKit
 
 class HabitDetailsViewController: UIViewController {
     
+    weak var editDelegate: HabitCreateEditDelegate?
+    
     fileprivate lazy var dates = {
         var dates = HabitsStore.shared.dates
         dates.reverse()
@@ -27,11 +29,25 @@ class HabitDetailsViewController: UIViewController {
         view.backgroundColor = .myHabitsLightGray
         setupNavigationBar()
         setupTableView()
+        notificationOfDelete()
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         title = habit!.name
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+    
+    private func notificationOfDelete() {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(habitDeleted(_:)),
+            name: .habitDeleted,
+            object: nil
+        )
     }
     
     private func setupNavigationBar() {
@@ -86,17 +102,29 @@ class HabitDetailsViewController: UIViewController {
     }
     
     @objc private func didTapRightBarButton() {
-        let habitEditViewController = HabitCreateEditViewController()
-        let navigationController = UINavigationController(rootViewController: habitEditViewController)
-        navigationController.modalPresentationStyle = .fullScreen
-        navigationController.navigationBar.prefersLargeTitles = false
-        habitEditViewController.navigationItem.title = "Править"
-        habitEditViewController.didSelect(selectedHabit: habit!, selectedIndex: index!)
-        present(navigationController, animated: true)
+            let habitEditViewController = HabitCreateEditViewController()
+            habitEditViewController.delegate = editDelegate
+            if let habit = habit, let index = index {
+                habitEditViewController.didSelect(selectedHabit: habit, selectedIndex: index)
+            }
+            let navigationController = UINavigationController(rootViewController: habitEditViewController)
+            navigationController.modalPresentationStyle = .fullScreen
+            navigationController.navigationBar.prefersLargeTitles = false
+            habitEditViewController.navigationItem.title = "Править"
+            present(navigationController, animated: true)
     }
     
     @objc private func didTapLeftBarButton() {
         navigationController?.popViewController(animated: true)
+    }
+    
+    @objc private func habitDeleted(_ notification: Notification) {
+        guard let info = notification.userInfo,
+              let deletedIndex = info["index"] as? Int,
+              let currentIndex = index else { return }
+        if deletedIndex == currentIndex {
+            navigationController?.popViewController(animated: true)
+        }
     }
 }
 
@@ -135,7 +163,3 @@ extension HabitDetailsViewController: HabitsViewControllerDelegate {
         index = selectedIndex
     }
 }
-    
-    
-
-

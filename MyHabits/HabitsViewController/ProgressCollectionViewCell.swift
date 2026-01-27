@@ -4,20 +4,10 @@ class ProgressCollectionViewCell: UICollectionViewCell {
     
     static let reuseIdentifier = "ProgressCollectionViewCell"
     
-    private lazy var percentageOfProgress: Float = {
-        let store = HabitsStore.shared
-        let progress = store.todayProgress
-        let onePercent = Float(1) / 100
-        let percentageOfProgress = progress / onePercent
-        
-        return percentageOfProgress
-    }()
-    
     private lazy var progressView: UIProgressView = {
         let progressView = UIProgressView()
         progressView.translatesAutoresizingMaskIntoConstraints = false
         progressView.progressTintColor = .myHabitsPurple
-        progressView.progress = 1 / 100 * percentageOfProgress
         
         return progressView
     }()
@@ -41,14 +31,14 @@ class ProgressCollectionViewCell: UICollectionViewCell {
         label.font = UIFont.systemFont(ofSize: 13.0, weight: .semibold)
         label.textColor = .systemGray
         label.textAlignment = .right
-        label.text = "\(Int(percentageOfProgress))% "
         
         return label
     }()
     
+    private var newValueOfProgress: Float = 0.0
+    
     override init(frame: CGRect) {
        super.init(frame: frame)
-       
        setupView()
    }
        
@@ -79,5 +69,12 @@ class ProgressCollectionViewCell: UICollectionViewCell {
             progressView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -12.0),
             progressView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -15.0)
         ])
+    }
+    
+    func percentageOfProgress(value: Float) {
+        let onePercent = Float(1) / 100
+        let percentageOfProgress = value / onePercent
+        progresslabel.text = "\(Int(percentageOfProgress))%"
+        progressView.setProgress(Float(1 / 100 * percentageOfProgress), animated: true)
     }
 }
