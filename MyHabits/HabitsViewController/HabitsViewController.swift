@@ -101,10 +101,7 @@ class HabitsViewController: UIViewController {
         habitsCollectionView.performBatchUpdates({
             habitsCollectionView.deleteItems(at: [deleteIndex])
         }, completion: { _ in
-            let progressIndex = IndexPath(item: 0, section: 0)
-            if self.habitsCollectionView.indexPathsForVisibleItems.contains(progressIndex) {
-                self.habitsCollectionView.reloadItems(at: [progressIndex])
-            }
+            self.updateProgressCell()
         })
     }
  

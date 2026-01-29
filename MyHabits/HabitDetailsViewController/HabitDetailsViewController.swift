@@ -51,22 +51,13 @@ class HabitDetailsViewController: UIViewController {
     }
     
     private func setupNavigationBar() {
-        let symbol = UIBarButtonItem(
+        navigationItem.leftBarButtonItem = UIBarButtonItem(
             image: UIImage(named: "arrow"),
             style: .plain,
             target: self,
             action: #selector(didTapLeftBarButton)
         )
-        let string = UIBarButtonItem(
-            title: "Сегодня",
-            style: .plain,
-            target: self,
-            action: #selector(didTapLeftBarButton)
-        )
-        string.tintColor = .myHabitsPurple
-        symbol.tintColor = .myHabitsPurple
-        navigationItem.leftBarButtonItems = [symbol, string]
-
+        navigationItem.leftBarButtonItem?.tintColor = .myHabitsPurple
         navigationItem.rightBarButtonItem = UIBarButtonItem(
             title: "Править",
             style: .plain,
