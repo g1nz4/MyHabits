@@ -1,10 +1,3 @@
-//
-//  SceneDelegate.swift
-//  MyHabits
-//
-//  Created by g1nz4 on 05.01.2026.
-//
-
 import UIKit
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
@@ -13,10 +6,42 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
-        // Use this method to optionally configure and attach the UIWindow `window` to the provided UIWindowScene `scene`.
-        // If using a storyboard, the `window` property will automatically be initialized and attached to the scene.
-        // This delegate does not imply the connecting scene or session are new (see `application:configurationForConnectingSceneSession` instead).
-        guard let _ = (scene as? UIWindowScene) else { return }
+        
+        guard let scene = (scene as? UIWindowScene) else { return }
+                  
+               let window = UIWindow(windowScene: scene)
+                  
+               let tabBarController = UITabBarController()
+               
+               let habitsViewController = HabitsViewController()
+               let infoViewController = InfoViewController()
+               
+               let habitsNavigationController = UINavigationController(rootViewController: habitsViewController)
+               let infoNavigationController = UINavigationController(rootViewController: infoViewController)
+               
+               habitsNavigationController.tabBarItem = UITabBarItem(
+                   title: "Привычки",
+                   image: UIImage(named: "tab_icon"),
+                   tag: 0
+               )
+               infoNavigationController.tabBarItem = UITabBarItem(
+                   title: "Информация",
+                   image: UIImage(systemName: "info.circle.fill"),
+                   tag: 1
+               )
+        
+               let controllers = [habitsNavigationController, infoNavigationController]
+               tabBarController.viewControllers = controllers
+               tabBarController.selectedIndex = 0
+    
+               tabBarController.tabBar.backgroundColor = .tabBarToolbar
+               tabBarController.tabBar.tintColor = .myHabitsPurple
+               tabBarController.tabBar.unselectedItemTintColor = .systemGray2
+        
+               window.rootViewController = tabBarController
+               window.makeKeyAndVisible()
+                       
+               self.window = window
     }
 
     func sceneDidDisconnect(_ scene: UIScene) {
